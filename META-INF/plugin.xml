@@ -1,0 +1,45 @@
+<idea-plugin version="2">
+  <id>com.takt.plugin.id</id>
+  <name>ElasticTabs</name>
+  <version>1.0</version>
+  <vendor url="" email="tkatkov@gmail.com">Taras Katkov</vendor>
+
+  <description><![CDATA[
+      This plugins allows to format selected text using elastic tabs.<br>
+      Separator is selected based on the first line from '=', ':', 'at', 'import', ','<br>
+      Default hotkey: Ctrl+Shift+Alt+E<br>
+      Separator ',' processed as table columns separator.
+      ]]></description>
+
+  <!-- please see http://confluence.jetbrains.net/display/IDEADEV/Build+Number+Ranges for description -->
+  <idea-version since-build="8000"/>
+
+  <!-- please see http://confluence.jetbrains.net/display/IDEADEV/Plugin+Compatibility+with+IntelliJ+Platform+Products
+       on how to target different products -->
+  <depends>com.intellij.modules.lang</depends>
+
+    <application-components>
+    <!-- Add your application components here -->
+  </application-components>
+
+  <project-components>
+    <!-- Add your project components here -->
+  </project-components>
+
+  <actions>
+        <group id="ElasticTabsGroup" text="ElasticTabs" popup="false">
+            <separator/>
+
+            <action id="FormatElastic" class="com.takt.elastic.actions.FormatAction"
+                    text="Elastic Tabs" description="Format using elastic tabs">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift alt E"/>
+            </action>
+
+            <add-to-group group-id="EditMenu" anchor="last"/>
+        </group>
+  </actions>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <!-- Add your extensions here -->
+  </extensions>
+</idea-plugin>
