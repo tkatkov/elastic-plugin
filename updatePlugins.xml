@@ -1,0 +1,13 @@
+<!DOCTYPE plugins [
+<!ELEMENT plugins (plugin)*>
+        <!ELEMENT plugin (#PCDATA)>
+        <!ATTLIST plugin
+id CDATA #REQUIRED
+url CDATA #REQUIRED
+version CDATA #IMPLIED>
+        ]>
+<plugins>
+  <plugin id="com.takt.plugin.id"
+          url="https://github.com/tkatkov/elastic-plugin/raw/master/elastic-plugin.jar"
+          version="1.0"/>
+</plugins>
