@@ -34,15 +34,31 @@ public class FormatAction extends AnAction {
 
     private static String trimEnd(String str)
     {
-        int len = str.length();
+        return str.replaceAll("\\s+$", "");
+//        int len = str.length();
+//        char[] val = str.toCharArray();
+//
+//        while ((0 < len) && (val[len - 1] <= ' '))
+//        {
+//            len--;
+//        }
+//
+//        return (len < str.length()) ? str.substring(0, len) : str;
+    }
+
+    private static String leadingSpaces(String str)
+    {
+        int len = 0;
+        String ret = "";
         char[] val = str.toCharArray();
 
-        while ((0 < len) && (val[len - 1] <= ' '))
+        while (val[len] == ' ')
         {
-            len--;
+            len++;
+            ret += " ";
         }
 
-        return (len < str.length()) ? str.substring(0, len) : str;
+        return ret;
     }
 
     private static String extractLine(Document doc, int lineNumber)
@@ -111,117 +127,153 @@ public class FormatAction extends AnAction {
                         int lineNumberSelStart = document.getLineNumber(offsetStart);
                         int lineNumberSelEnd   = document.getLineNumber(offsetEnd  );
 
-                        if( lineNumberSelEnd > lineNumberSelStart )
+                        if( lineNumberSelEnd <= lineNumberSelStart ) return;
+
+                        int amountLines = lineNumberSelEnd - lineNumberSelStart;
+                        List<String> linesList = new ArrayList<String>( amountLines );
+
+                        for (int i = lineNumberSelStart; i <= lineNumberSelEnd; i++)
                         {
-                            int amountLines = lineNumberSelEnd - lineNumberSelStart;
-                            List<String> linesList = new ArrayList<String>( amountLines );
+                            linesList.add( extractLine(document, i) );
+                        }
 
-                            for (int i = lineNumberSelStart; i <= lineNumberSelEnd; i++)
+                        String sep = "=";
+
+                        String line1 = linesList.get(0);
+
+                        if ( ! line1.contains( sep ) ) sep = ":";
+                        if ( ! line1.contains( sep ) ) sep = "as";
+                        if ( ! line1.contains( sep ) ) sep = "import";
+                        if ( ! line1.contains( sep ) ) sep = ",";
+                        if ( ! line1.contains( sep ) ) return;
+
+                        if ( sep.equals( "," ) )
+                        {
+                            int[] maxB = new int[42];
+                            for(int i = 0; i < 42; i++) maxB[i] = 0;
+
+                            for (String cs : linesList)
                             {
-                                linesList.add( extractLine(document, i) );
-                            }
+                                if ( ! cs.contains( sep ) ) continue;
 
-                            String sep = "=";
+                                String[] parts = cs.split( sep );
 
-                            if ( ! linesList.get(0).contains( sep ) ) sep = ":";
-                            if ( ! linesList.get(0).contains( sep ) ) sep = "as";
-                            if ( ! linesList.get(0).contains( sep ) ) sep = "import";
-                            if ( ! linesList.get(0).contains( sep ) ) sep = ",";
-                            if ( ! linesList.get(0).contains( sep ) ) return;
+                                String part1 = trimEnd(parts[0]);
+                                if ( part1.length() > maxB[0] ) maxB[0] = part1.length();
 
-                            if ( sep.equals( "," ) )
-                            {
-                                int[] maxB = new int[42];
-                                for(int i = 0; i < 42; i++) maxB[i] = 0;
-
-                                for (String cs : linesList)
+                                for(int i = 1; i < parts.length; i++)
                                 {
-                                    if ( ! cs.contains( sep ) ) continue;
-
-                                    String[] parts = cs.split( sep );
-
-                                    String part1 = trimEnd(parts[0]);
-                                    if ( part1.length() > maxB[0] ) maxB[0] = part1.length();
-
-                                    for(int i = 1; i < parts.length; i++)
-                                    {
-                                        String part = parts[i].trim();
-                                        if ( part.length() > maxB[i] ) maxB[i] = part.length();
-                                    }
+                                    String part = parts[i].trim();
+                                    if ( part.length() > maxB[i] ) maxB[i] = part.length();
                                 }
-                                for(int i = 0; i < amountLines; i++)
+                            }
+                            for(int i = 0; i < amountLines; i++)
+                            {
+                                String cs = linesList.get(i);
+
+                                if ( ! cs.contains( sep ) ) continue;
+
+                                String[] parts = cs.split( sep );
+
+                                String startPart = trimEnd( parts[0] );
+
+                                int ll = maxB[0] - startPart.length();
+                                String fmt = "";
+                                if ( ll > 0 ) fmt = String.format("%-" + ll + "s", "");
+
+                                String nl = String.format("%s,%s", startPart, fmt);
+
+                                for(int j = 1; j < parts.length; j++)
                                 {
-                                    String cs = linesList.get(i);
+                                    String part = parts[j].trim();
+                                    ll = maxB[j] - part.length();
 
-                                    if ( ! cs.contains( sep ) ) continue;
+                                    if ( j == parts.length-1 )
+                                    {
+                                        nl += part;
+                                        continue;
+                                    }
 
-                                    String[] parts = cs.split( sep );
-
-                                    String startPart = trimEnd( parts[0] );
-
-                                    int ll = maxB[0] - startPart.length();
-                                    String fmt = "";
+                                    fmt = "";
                                     if ( ll > 0 ) fmt = String.format("%-" + ll + "s", "");
 
-                                    String nl = String.format("%s,%s", startPart, fmt);
-
-                                    for(int j = 1; j < parts.length; j++)
-                                    {
-                                        String part = parts[j].trim();
-                                        ll = maxB[j] - part.length();
-
-                                        if ( j == parts.length-1 )
-                                        {
-                                            nl += part;
-                                            continue;
-                                        }
-
-                                        fmt = "";
-                                        if ( ll > 0 ) fmt = String.format("%-" + ll + "s", "");
-
-                                        nl += String.format("%s,%s", part, fmt);
-                                    }
-                                    linesList.set(i, nl+'\n');
+                                    nl += String.format("%s,%s", part, fmt);
                                 }
+                                linesList.set(i, nl+'\n');
                             }
-                            else
+                        }
+                        else
+                        {
+                            int maxB = 0;
+                            int maxB2 = 0;
+                            boolean allTwo = true;
+                            for (String cs : linesList)
                             {
-                                int maxB = 0;
+                                if ( ! cs.contains( sep ) ) continue;
 
-                                for (String cs : linesList)
+                                String part1 = trimEnd(cs.split( sep )[0]);     // before 1st separator trimmed at the end
+
+                                String[] parts = part1.trim().split("\\s+");
+
+                                if ( allTwo ) allTwo = parts.length == 2;
+
+                                if ( allTwo )
                                 {
-                                    if ( ! cs.contains( sep ) ) continue;
+                                    String ls = leadingSpaces( part1 );
 
-                                    String part1 = trimEnd(cs.split( sep )[0]);
+                                    int pl = ls.length() + parts[0].length() + parts[1].length() + 1;
 
+                                    if ( pl > maxB2 ) maxB2 = pl;
+                                }
+                                else
+                                {
                                     if ( part1.length() > maxB ) maxB = part1.length();
-
                                 }
-                                for(int i = 0; i < amountLines; i++)
+                            }
+                            if ( allTwo ) maxB = maxB2;
+
+                            for(int i = 0; i < amountLines; i++)
+                            {
+                                String cs = linesList.get(i);
+
+                                if ( ! cs.contains( sep ) ) continue;
+
+                                String[] parts = cs.split( sep );
+
+                                String startPart = trimEnd( parts[0] );
+                                if ( allTwo )
                                 {
-                                    String cs = linesList.get(i);
+                                    String ls = leadingSpaces( startPart );
+                                    String[] sParts = startPart.trim().split("\\s+");
 
-                                    if ( ! cs.contains( sep ) ) continue;
-
-                                    String[] parts = cs.split( sep );
-
-                                    String startPart = trimEnd( parts[0] );
-
-                                    StringBuilder sb = new StringBuilder(parts[1]);
-                                    for(int j = 2; j < parts.length; j++)
-                                    {
-                                        sb.append( sep );
-                                        sb.append( parts[j] );
-                                    }
-
-                                    String endPart = sb.toString().trim();
-
-                                    int ll = maxB - startPart.length();
-                                    String fmt = "";
-                                    if ( ll > 0 ) fmt = String.format("%-" + ll + "s", "");
-
-                                    linesList.set(i, String.format("%s%s %s %s\n", startPart, fmt, sep, endPart));
+                                    int ll = maxB - sParts[0].length() - ls.length() - sParts[1].length();
+                                    String fmt = String.format("%-" + ll + "s", "");
+                                    startPart = String.format( "%s%s%s%s", ls, sParts[0], fmt, sParts[1] );
                                 }
+
+                                StringBuilder sb = new StringBuilder(parts[1]);
+                                for(int j = 2; j < parts.length; j++)
+                                {
+                                    sb.append( sep );
+                                    sb.append( parts[j] );
+                                }
+
+                                String endPart = sb.toString().trim();
+
+//                                    int pos = endPart.indexOf( "#" );
+//                                    if ( pos > 0 )
+//                                    {
+//                                        String sp = endPart.substring(0,pos).trim();
+//                                        String ep = endPart.substring(  pos).trim();
+//
+//                                        endPart = String.format("%s # %s", sp, ep);
+//                                    }
+//
+                                int ll = maxB - startPart.length();
+                                String fmt = "";
+                                if ( ll > 0 ) fmt = String.format("%-" + ll + "s", "");
+
+                                linesList.set(i, String.format("%s%s %s %s\n", startPart, fmt, sep, endPart));
                             }
 
                             StringBuilder sb = new StringBuilder();
